@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Peta</title>
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+	<link rel="stylesheet" href="lib/leaflet-0.7.2/leaflet.css" />
+
+	<script src="lib/jquery-2.1.0/jquery-2.1.0.min.js"></script>
+	
+	<script src="lib/leaflet-0.7.2/leaflet.js"></script>
+	
+	<link rel="stylesheet" href="lib/bootstrap-3.1.0/css/bootstrap.min.css">
+	
+	<link rel="stylesheet" href="lib/bootstrap-3.1.0/css/bootstrap-theme.min.css">
+
+	<script src="lib/bootstrap-3.1.0/js/bootstrap.min.js"></script>
+
+	<style>
+		body {
+			padding: 0;
+			margin: 0;
+		}
+		html, body, #map {
+			height: 100%;
+		}
+	.navbar {
+		margin: 0px;
+		position: fixed;
+		top: 0px;
+		left: 0px;
+		z-index: 1000;
+		width: 100%;
+		background-color: rgba(200,200,200,0.8);
+	}
+	.navbar-brand {
+		color: black;
+		font-weight: bold;
+		}
+		
+		#btn-about{
+			margin-top: 10px;
+			}
+	</style>
+	<script>
+		
+	</script>
+</head>
+<body>
+	<nav class="navbar navbar-normal" role="navigation">
+  <div class="container-fluid">
+    <!-- Brand and toggle get grouped for better mobile display -->
+    <div class="navbar-header">
+      <a class="navbar-brand" href="#">Peta</a>
+    </div>
+
+    <!-- Collect the nav links, forms, and other content for toggling -->
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+     <form class="navbar-form navbar-left" role="search">    
+      <div class="form-group">
+          <input type="text" id="search-text" class="form-control" placeholder="Lokasi yang ingin dicari...">
+        </div>
+        <button id="search-button" class="btn btn-default">Cari</button>
+      </form>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+			<button class="btn btn-primary" id= "btn-about" data-toggle="modal" data-target=".about-dialog"><span class="glyphicon glyphicon-question-sign"> </span></button>
+        </li>
+      </ul>
+    </div><!-- /.navbar-collapse -->
+  </div><!-- /.container-fluid -->
+</nav>
+	<div class="alert alert-danger" id= "error-dialog" style= "display: none"><strong>Maaf, </strong>ada gangguan akses server</div>
+	<div id="map"></div>
+	<div class="modal fade about-dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title">Peta</h4>
+      </div>
+      <div class="modal-body">
+        <p>
+			<span style= "color: red">geo.</span>Blankon<br/>
+			Author: <strong>Cahaya Maulidian</strong>
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+	<script>
+		
+		$(function(){
+			var map = L.map('map', {zoomControl: false});
+			var markerGroup= L.layerGroup ();
+			markerGroup.addTo(map);
+			var latlng = L.latLng(-3.328499,114.589203);
+			map.setView (latlng, 5, {animate: true});
+			var control = L.control.zoom({position: "bottomleft"}) 
+			control.addTo(map);
+			 
+			$("#search-button").click(function(e){
+				e.preventDefault();
+				$("#search-button") .prop( "disabled", true);
+				$("#error-dialog") .css("display", "none");
+				var url="http://beta.geocoding.cloudmade.com/v3/8ee2a50541944fb9bcedded5165f09d9/api/geo.location.search.2?format=json&source=OSM&enc=UTF-8&limit=10&locale=id&q="+ $("#search-text").val();
+				$.ajax({
+					url: url,
+					dataType: "json"
+				}).error(function(data) {
+					$("#error-dialog") .css("display", "block");
+					$("#search-button") .prop( "disabled", false);
+				}).done(function(data) {
+					$("#search-button") .prop( "disabled", false);
+					console.log (data);
+					if (data && data.places && data.places.length > 0) {
+						var position= data.places[0].position;
+						console.log (position)
+						var latlng = L.latLng(position.lat, position.lon);
+						map.setView (latlng, 12, {animate: true});
+						markerGroup.clearLayers();
+						var marker = L.popup({autoPan: true});
+						marker.setLatLng(latlng);
+						var content = data.places[0].street||"";
+						content+="<br>"+data.places[0].city;
+						content+="<br>"+data.places[0].country;
+						marker.setContent(content);
+						marker.openOn(map);
+					} 
+				});
+			});
+		
+	
+		L.tileLayer('http://{s}.tile.cloudmade.com/BC9A493B41014CAABB98F0471D759707/997/256/{z}/{x}/{y}.png', {
+			zoom: 5,
+			maxZoom: 18,
+			attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery Â© <a href="http://cloudmade.com">CloudMade</a>'
+		}).addTo(map);
+
+		function onLocationFound(e) {
+			var radius = e.accuracy / 2;
+
+			L.marker(e.latlng).addTo(map)
+				.bindPopup("You are within " + radius + " meters from this point").openPopup();
+
+			L.circle(e.latlng, radius).addTo(map);
+		}
+
+		function onLocationError(e) {
+			alert(e.message);
+		}
+
+		map.on('locationfound', onLocationFound);
+		map.on('locationerror', onLocationError);
+
+		//map.locate({setView: true, zoom: 10, maxZoom: 16});
+		
+		});
+	</script>
+</body>
+</html>
+

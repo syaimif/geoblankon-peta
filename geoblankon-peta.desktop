@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=GeoBlankOn
+Comment=Client viewer for GeoBlankOn
+Exec=maleo /usr/lib/geoblankon-peta
+Icon=geoblankon-peta
+Terminal=false
+Type=Application
+Categories=Network;
+StartupNotify=true
+
